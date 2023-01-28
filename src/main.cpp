@@ -2,19 +2,18 @@
 #include <WiFiUdp.h>
 #include <WebServer.h>
 
+#include "secrets.h"
+
 #define SERVER_PORT 1144
 #define WOL_PORT 9
 #define WOL_REPEAT 5
-#define LAB_MAC "00:00:00:00:00:00"
 
 #include <WakeOnLan.h>
 
 WiFiUDP UDP;
 WakeOnLan WOL(UDP);
-WebServer server(1144);
+WebServer server(SERVER_PORT);
 
-const char *ssid = "";
-const char *password = "";
 
 IPAddress ipAddress(192, 168, 0, 179);
 IPAddress gateway(192, 168, 0, 1);
@@ -30,15 +29,22 @@ void wakeServer()
 
 void setup()
 {
-  WOL.setRepeat(5, 200); // Optional, repeat the packet three times with 100ms between. WARNING delay() is used between send packet function.
   if (!WiFi.config(ipAddress, gateway, subnet))
   {
     Serial.println("STA Failed to configure");
   }
   WiFi.mode(WIFI_STA);
-  WiFi.begin(ssid, password);
+  Serial.println("Connecting to WiFi");
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 
-  
+  WOL.setRepeat(WOL_REPEAT, 200); // Optional, repeat the packet three times with 100ms between. WARNING delay() is used between send packet function.
+
+  while (WiFi.status() != WL_CONNECTED)
+  {
+    delay(500);
+    Serial.print(".");
+  }
+
   Serial.println("WiFi connected.");
   Serial.println("IP address: ");
   Serial.println(WiFi.localIP());
@@ -48,12 +54,7 @@ void setup()
   Serial.print("HTTP server started on port ");
   Serial.println(SERVER_PORT);
 
-  while (WiFi.status() != WL_CONNECTED)
-  {
-    delay(500);
-    Serial.print(".");
-  }
-
+ 
   WOL.calculateBroadcastAddress(WiFi.localIP(), WiFi.subnetMask()); // Optional  => To calculate the broadcast address, otherwise 255.255.255.255 is used (which is denied in some networks).
 }
 
